@@ -66,14 +66,6 @@ def split_output(string, every=10):
     return '\n'.join(lines)
 
 
-
-
-
-
-
-
-
-
 # creates the simple local streamlit interface
 # creating local server
 st.image("nreca_logo.jpg")
