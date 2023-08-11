@@ -19,7 +19,7 @@ from langchain.prompts.chat import (
 
 
 
-os.environ["OPENAI_API_KEY"] = "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"
+os.environ["OPENAI_API_KEY"] = "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"
 load_dotenv(find_dotenv())
 embeddings = OpenAIEmbeddings()
 
@@ -110,34 +110,30 @@ def process_link(page):
     # Drop blank lines and join everything into a single string
     textMerg = '\n'.join(chunk for chunk in chunks if chunk)
 
-    try: 
-        # write text to the temp txt file
-        with open(r"\\VAPP-SRV-FS3\axc22$\Projects\Chat_bot\temp.txt", 'w+', encoding='utf-8') as f:
-            # clear anything that was in temp.txt from last iteration
-            f.truncate(0)
-            
-            # write new scraped wesbite to .txt file
-            f.write(textMerg)
+    # write text to the temp txt file
+    with open(r"\\VAPP-SRV-FS3\axc22$\Projects\Chat_bot\temp.txt", 'w+', encoding='utf-8') as f:
+        # clear anything that was in temp.txt from last iteration
+        f.truncate(0)
+        
+        # write new scraped wesbite to .txt file
+        f.write(textMerg)
 
-            f.flush()
-            os.fsync(f.fileno())
+        f.flush()
+        os.fsync(f.fileno())
 
-            # load and reformat text to be ready for training
-            loader = TextLoader(r"\\VAPP-SRV-FS3\axc22$\Projects\Chat_bot\temp.txt", encoding='utf-8')
-            documents = loader.load()
+        # load and reformat text to be ready for training
+        loader = TextLoader(r"\\VAPP-SRV-FS3\axc22$\Projects\Chat_bot\temp.txt", encoding='utf-8')
+        documents = loader.load()
 
-            text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-            docs = text_splitter.split_documents(documents)
+        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+        docs = text_splitter.split_documents(documents)
 
-            # add recent website information to data base
-            db.add_documents(docs)
-
-    except:
-        db.save_local('U:\Projects\Chat_bot')
+        # add recent website information to data base
+        db.add_documents(docs)
 
     # give the computer a second to close the file
     # and time to breath
-    time.sleep(8.0)
+    time.sleep(45.0)
 # end of function
         
 
@@ -155,11 +151,30 @@ while queue:
     # pop first in link and set it to url
     url = queue.popleft()
     
-    process_link(url)
+    try:
+        process_link(url)
+    except:
+        print("link didn't work" + '\n')
+        time.sleep(20.0)
+        try:
+            with open(r"\\VAPP-SRV-FS3\axc22$\Projects\Chat_bot\temp.txt", 'w+', encoding='utf-8') as f:
+                # clear anything that was in temp.txt from last iteration
+                f.truncate(0)
+            time.sleep(20.0)
+        except:
+            continue
+        
+        # continue to next iteration if error with previous url
+        continue
     
     count += 1
     print(count)
     print(url + '\n')
+
+    # save every 50 iterations
+    if count % 30 == 0:
+        db.save_local('U:\Projects\Chat_bot')
+        time.sleep(60.0)
 
 
 # once we have scraped entire website and filled data base
@@ -169,80 +184,3 @@ db.save_local('U:\Projects\Chat_bot')
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 'https://www.cooperative.com/_trust/default.aspx?trust=SP2016_PING_PROD&ReturnUrl=/_layouts/15/Authenticate.aspx?Source=%2fPages%2fdefault.aspx'
-
-# 'https://www.cooperative.com/topics/advocacy'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# also, test its behavior with pdfs
-
-# look for Pages/Secure to show that it doesn't break the fire wall
-
-# each time you process a link, you scrape all links on that url's page
-# I have a counter in the while loop to tell me how many times
-# the process_link function is called, and it only gets called once
-# before there is an error, so there is something wrong with calling
-# process_link with the top priority link in the queue
-# string must be formatted differently when scraped
-# breakpoint to find out
-        
-
-
-
-# NOTES FOR WHEN I CONTINUE WORKING ON IT: WHERE I LEFT OF DEBUGGING
-
-# on the second iteration of the while loop, this link:
-    # "https://www.cooperative.com/topics/advocacy/Pages/Political-Advocacy-Overview-and-Key-Contacts/"
-    # which can be clearly found on the page:
-    # https://www.cooperative.com/topics/advocacy/Pages/default.aspx
-        # this is the page that the second iteration of the while loop runs on (the first page after the home page that the function scrapes)
-# 260 links are scraped, but somehow, all of them are either not proper links or already in link_set
-# the link pasted above (Political-Advocacy...) is also apparanetly not in links (the list of links found when scraping the page)
-
-# I have a feeling the issue is becuase some links the way they are captured
-# by beautiful soup, do not have the .aspx in their ending\
-
-
-# next steps for debugging this is to compare more detailed counts 
-# 170 urls in the first iteration are valid and added to the link_set
-# in the next iteration, 170 elements reach the stage right before checking
-    # whether or not the url is already in the set; none pass this condition 
-# I have a feeling the issue is that the scraper is somehow scraping the home page again
-# or at least somehow scraping the exact same set of links
-# even though the amount of elements in "links" list is different in the second iteration
-# a lot of those links (<a> tags) are just buttons 
-# again, the amount of actual links that are in the list in the second iteration
-# is the exact same as the first
-
-# another possibility is that the first iteration scrapes more than I think it scrapes 
-    # (somehow goes beyond its own page)
-# but I don't think this is the case
-
-# i think the error is in the scraper in that it doesn't scrape the new url, it just rescrapes the old one
-
-# error is that the scraper is not properly scraping. Not sure why
